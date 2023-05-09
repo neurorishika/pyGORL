@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from models import HetQLearning
+from models import QLearning
 import pickle
 
 # Importing the dataset
@@ -16,7 +16,7 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = HetQLearning(2)
+model = QLearning()
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
@@ -43,7 +43,7 @@ for i in range(12):
         results = results + pickle.load(f)
 
 # save a single file
-with open('Het2QL_loocv_dego.pkl','wb') as f:
+with open('QL_loocv_dego.pkl','wb') as f:
     pickle.dump(results,f)
 
 
