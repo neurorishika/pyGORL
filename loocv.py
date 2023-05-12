@@ -38,7 +38,7 @@ for i in range(N//n_jobs):
 
 results = []
 # load and collate all results
-for i in range(12):
+for i in range(N//n_jobs):
     with open(f'loocv_results_{i}.pkl','rb') as f:
         results = results + pickle.load(f)
 
