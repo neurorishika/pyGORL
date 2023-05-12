@@ -5,10 +5,11 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 from models import HetFQLearning
 import pickle
+import os
 
 # Importing the dataset
-choices_full = np.loadtxt('full_action_set.csv', delimiter=',')
-rewards_full = np.loadtxt('full_reward_set.csv', delimiter=',')
+choices_full = np.loadtxt('data/full_action_set.csv', delimiter=',')
+rewards_full = np.loadtxt('data/full_reward_set.csv', delimiter=',')
 
 assert len(choices_full) == len(rewards_full), "Choices and rewards are not the same length"
 N = len(choices_full)
@@ -43,8 +44,12 @@ for i in range(N//n_jobs):
         results = results + pickle.load(f)
 
 # save a single file
-with open('HetFQL_loocv_shgo.pkl','wb') as f:
+with open('fitted_models/HetFQL_loocv_shgo.pkl','wb') as f:
     pickle.dump(results,f)
+
+# delete the individual files
+for i in range(N//n_jobs):
+    os.remove(f'loocv_results_{i}.pkl')
 
 
 
