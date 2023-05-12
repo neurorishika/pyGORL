@@ -13,7 +13,7 @@ rewards_full = np.loadtxt('full_reward_set.csv', delimiter=',')
 assert len(choices_full) == len(rewards_full), "Choices and rewards are not the same length"
 N = len(choices_full)
 
-n_jobs = 4 # number of cores to use (free to change this)
+n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
 model = HetFQLearning()
@@ -27,7 +27,7 @@ for i in range(N//n_jobs):
             subject, choices_full, rewards_full, params_init, lambda_reg=0,
             bounds=params_bounds,
             algo='shgo',
-            options={'disp':True}, iters=3
+            options={'disp':True}, iters=1
             # maxiter=1000, popsize=100, tol=1e-3, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
             )
