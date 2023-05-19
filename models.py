@@ -60,8 +60,14 @@ class QLearning():
         lls = []
         for i in range(len(choices)):
             # remove after first nan
-            cs = choices[i][:np.argmax(np.isnan(choices[i]))]
-            rs = rewards[i][:np.argmax(np.isnan(rewards[i]))]
+            if np.any(np.isnan(choices[i])):
+                cs = choices[i][:np.argmax(np.isnan(choices[i]))]
+            else:
+                cs = choices[i]
+            if np.any(np.isnan(rewards[i])):
+                rs = rewards[i][:np.argmax(np.isnan(rewards[i]))]
+            else:
+                rs = rewards[i]
             assert len(cs) == len(rs), 'choices and rewards must be same length'
             ps = self.prob_choice(cs, rs, params)[:-1,:]
             lls.append(np.sum(cs * np.log(ps[:,1]) + (1-cs) * np.log(ps[:,0])))
