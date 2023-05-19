@@ -8,8 +8,8 @@ import pickle
 import os
 
 # Importing the dataset
-choices_full = np.loadtxt('data/full_action_set.csv', delimiter=',')
-rewards_full = np.loadtxt('data/full_reward_set.csv', delimiter=',')
+choices_full = np.loadtxt('data/mohanta2022/full_action_set.csv', delimiter=',')
+rewards_full = np.loadtxt('data/mohanta2022/full_reward_set.csv', delimiter=',')
 
 assert len(choices_full) == len(rewards_full), "Choices and rewards are not the same length"
 N = len(choices_full)

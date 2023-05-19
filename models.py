@@ -59,8 +59,12 @@ class QLearning():
     def nll(self, params, choices, rewards):
         lls = []
         for i in range(len(choices)):
-            ps = self.prob_choice(choices[i], rewards[i], params)[:-1,:]
-            lls.append(np.sum(choices[i] * np.log(ps[:,1]) + (1-choices[i]) * np.log(ps[:,0])))
+            # remove after first nan
+            cs = choices[i][:np.argmax(np.isnan(choices[i]))]
+            rs = rewards[i][:np.argmax(np.isnan(rewards[i]))]
+            assert len(cs) == len(rs), 'choices and rewards must be same length'
+            ps = self.prob_choice(cs, rs, params)[:-1,:]
+            lls.append(np.sum(cs * np.log(ps[:,1]) + (1-cs) * np.log(ps[:,0])))
         return -np.sum(lls)
     
     # calculate the regularized negative log likelihood
