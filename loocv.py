@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from models import HetFQLearning
+from models import *
 import pickle
 import os
 
 # Importing the dataset
-choices_full = np.loadtxt('data/mohanta2022/full_action_set.csv', delimiter=',')
-rewards_full = np.loadtxt('data/mohanta2022/full_reward_set.csv', delimiter=',')
+choices_full = np.loadtxt('data/kaitlyn2023/full_action_set.csv', delimiter=',')
+rewards_full = np.loadtxt('data/kaitlyn2023/full_reward_set.csv', delimiter=',')
 
 assert len(choices_full) == len(rewards_full), "Choices and rewards are not the same length"
 N = len(choices_full)
@@ -17,7 +17,7 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = HetFQLearning()
+model = QLearning()
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
@@ -44,7 +44,7 @@ for i in range(N//n_jobs):
         results = results + pickle.load(f)
 
 # save a single file
-with open('fitted_models/HetFQL_loocv_shgo.pkl','wb') as f:
+with open('fitted_models/kaitlyn2023/QL_loocv_shgo.pkl','wb') as f:
     pickle.dump(results,f)
 
 # delete the individual files
