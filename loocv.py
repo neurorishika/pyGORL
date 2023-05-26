@@ -17,39 +17,46 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = QLearning()
+model = OSFQLearning()
+model_name = 'OSFQL'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
 
+if not os.path.exists('temp'):
+    os.mkdir('temp')
+if not os.path.exists(f'temp/{model_name}'):
+    os.mkdir(f'temp/{model_name}')
+
 for i in range(N//n_jobs):
+    print(f"Running LOOCV iteration {i+1} of {N//n_jobs}")
     results = Parallel(n_jobs=n_jobs)(
         delayed(model.fit_all_except)(
             subject, choices_full, rewards_full, params_init, lambda_reg=0,
             bounds=params_bounds,
             algo='shgo',
-            options={'disp':True}, iters=1
+            options={'disp':True,'maxiter':300}, iters=1
             # maxiter=1000, popsize=100, tol=1e-3, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
             )
 
     # Save the results as a pickle file
-    with open(f'loocv_results_{i}.pkl', 'wb') as f:
+    with open(f'temp/{model_name}/loocv_results_{i}.pkl', 'wb') as f:
         pickle.dump(results, f)
 
 results = []
 # load and collate all results
 for i in range(N//n_jobs):
-    with open(f'loocv_results_{i}.pkl','rb') as f:
+    with open(f'temp/{model_name}/loocv_results_{i}.pkl','rb') as f:
         results = results + pickle.load(f)
 
 # save a single file
-with open('fitted_models/kaitlyn2023/QL_loocv_shgo.pkl','wb') as f:
+with open(f'fitted_models/kaitlyn2023/{model_name}_loocv_shgo.pkl','wb') as f:
     pickle.dump(results,f)
 
 # delete the individual files
 for i in range(N//n_jobs):
-    os.remove(f'loocv_results_{i}.pkl')
+    os.remove(f'temp/{model_name}/loocv_results_{i}.pkl')
 
 
 
