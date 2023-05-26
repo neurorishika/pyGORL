@@ -17,8 +17,9 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = OSFQLearning()
-model_name = 'OSFQL'
+model = QLearning()
+model_name = 'QL'
+algorithm = 'de'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
@@ -34,9 +35,9 @@ for i in range(N//n_jobs):
         delayed(model.fit_all_except)(
             subject, choices_full, rewards_full, params_init, lambda_reg=0,
             bounds=params_bounds,
-            algo='shgo',
-            options={'disp':True,'maxiter':300}, iters=1
-            # maxiter=1000, popsize=100, tol=1e-3, disp=True
+            algo=algorithm,
+            # options={'disp':True,'maxiter':300}, iters=1
+            maxiter=1000, popsize=100, tol=1e-4, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
             )
 
@@ -51,7 +52,7 @@ for i in range(N//n_jobs):
         results = results + pickle.load(f)
 
 # save a single file
-with open(f'fitted_models/kaitlyn2023/{model_name}_loocv_shgo.pkl','wb') as f:
+with open(f'fitted_models/kaitlyn2023/{model_name}_loocv_{algorithm}.pkl','wb') as f:
     pickle.dump(results,f)
 
 # delete the individual files
