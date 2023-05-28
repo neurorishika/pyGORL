@@ -25,7 +25,7 @@ class QLearning():
         qs = np.zeros((len(choices)+1,2))
         qs[0,:] = params[:2]
         for i in range(len(choices)):
-            qs[i+1,:] = self.q_update(qs[i,:],int(choices[i]), rewards[i], params[2:])
+            qs[i+1,:] = self.q_update(qs[i,:].copy(),int(choices[i]), rewards[i], params[2:])
         return qs
 
     # define the policy function
@@ -145,7 +145,7 @@ class HetQLearning(QLearning):
         n_q = self.param_props()['n_q']
         for i in range(len(choices)):
             for j in range(self.N_modules):
-                qs[i+1,:,j] = self.q_update(qs[i,:,j],int(choices[i]), rewards[i], params[2+j*n_q:])
+                qs[i+1,:,j] = self.q_update(qs[i,:,j].copy(),int(choices[i]), rewards[i], params[2+j*n_q:])
         # find likelihood of each set of q values
         ps = np.clip(self.policy(qs,params), self.eps, 1-self.eps)[:-1,:,:]
         ll = choices[:,None] * np.log(ps[:,1,:]) + (1-choices[:,None]) * np.log(ps[:,0,:])
