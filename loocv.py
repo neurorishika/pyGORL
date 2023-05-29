@@ -17,8 +17,8 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = OSQLearning()
-model_name = 'OSQL'
+model = SOSFQLearning()
+model_name = 'SOSQL'
 algorithm = 'de'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']

@@ -309,3 +309,55 @@ class HetOSFQLearning(HetQLearning):
             'n_p': 2 # number of policy parameters
             }
         return param_props
+    
+class SOSFQLearning(QLearning):
+    # redefine the q update function
+    def q_update(self, q, choice, reward, params):
+        params = np.array(params)
+        alpha, theta, kappa = params[0], params[1], params[2]
+        if reward != 0:
+            q[choice] = q[choice] + alpha*(reward - q[choice])
+        else:
+            q[choice] = q[choice] + alpha*(theta*q[choice] - q[choice])
+        q[1-choice] = (1-kappa)*q[1-choice]
+        return q
+
+    # redefine the parameter properties
+    def param_props(self):
+        param_props = {
+            'names': ['q0_init', 'q1_init', 'alpha', 'theta', 'kappa', 'beta'],
+            'suggested_bounds': [(0,1),(0,1),(0,1),(-1,1),(0,1),(0.01,100)],
+            'suggested_init': [0.5,0.5,0.5,0.0,0.5,1.],
+            'n_q': 3, # number of q update parameters
+            'n_p': 1 # number of policy parameters
+            }
+        return param_props
+
+class HetSOSFQLearning(HetQLearning):
+    # redefine the q update function
+    def q_update(self, q, choice, reward, params):
+        params = np.array(params)
+        alpha, theta, kappa = params[0], params[1], params[2]
+        if reward != 0:
+            q[choice] = q[choice] + alpha*(reward - q[choice])
+        else:
+            q[choice] = q[choice] + alpha*(theta*q[choice] - q[choice])
+        q[1-choice] = (1-kappa)*q[1-choice]
+        return q
+    
+    # redefine the parameter properties
+    def param_props(self):
+        param_props = {
+            'names': ['q0_init', 'q1_init'] + [val for pair in zip(['alpha_%i' % i for i in range(self.N_modules)],
+                                                                   ['theta'%i for i in range(self.N_modules)],
+                                                                   ['kappa_%i' % i for i in range(self.N_modules)]) for val in pair] + ['tau', 'beta'],
+            'suggested_bounds': [(0,1),(0,1)] + [val for pair in zip([(0,1) for i in range(self.N_modules)],
+                                                                     [(-1,1) for i in range(self.N_modules)],
+                                                                     [(0,1) for i in range(self.N_modules)]) for val in pair] + [(1,30), (0.01,100)],
+            'suggested_init': [0.5,0.5] + [val for pair in zip(np.arange(1,self.N_modules+1)/(self.N_modules+1),
+                                                                np.arange(1,self.N_modules+1)[::-1]/(self.N_modules+1),
+                                                                np.arange(1,self.N_modules+1)/(self.N_modules+1)) for val in pair] + [7.,1.],
+            'n_q': 3, # number of q update parameters per module
+            'n_p': 2 # number of policy parameters
+            }
+        return param_props
