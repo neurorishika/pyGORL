@@ -17,8 +17,8 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = HetFQLearning(2)
-model_name = 'Het2FQL'
+model = OSQLearning()
+model_name = 'OSQL'
 algorithm = 'de'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
@@ -51,8 +51,11 @@ for i in range(N//n_jobs):
     with open(f'temp/{model_name}/loocv_results_{i}.pkl','rb') as f:
         results = results + pickle.load(f)
 
+from datetime import datetime
+dt = datetime.now().strftime('%Y%m%d')
+
 # save a single file
-with open(f'fitted_models/kaitlyn2023/{model_name}_loocv_{algorithm}.pkl','wb') as f:
+with open(f'fitted_models/kaitlyn2023/{model_name}_loocv_{algorithm}_{dt}.pkl','wb') as f:
     pickle.dump(results,f)
 
 # delete the individual files
