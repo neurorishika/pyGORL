@@ -14,12 +14,12 @@ rewards_full = np.loadtxt('data/kaitlyn2023/full_reward_set.csv', delimiter=',')
 assert len(choices_full) == len(rewards_full), "Choices and rewards are not the same length"
 N = len(choices_full)
 
-n_jobs = 11 # number of cores to use (free to change this)
+n_jobs = 1 # number of cores to use (free to change this)
 
 # Set up the model
-model = HetSOSFQLearning(2)
-model_name = 'Het2SOSFQL'
-algorithm = 'de'
+model = FQLearning()
+model_name = 'FQL'
+algorithm = 'shgo'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
@@ -37,7 +37,7 @@ for i in range(N//n_jobs):
             bounds=params_bounds,
             algo=algorithm,
             # options={'disp':True,'maxiter':300}, iters=1
-            maxiter=1000, popsize=100, tol=1e-4, disp=True
+            # maxiter=1000, popsize=100, tol=1e-3, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
             )
 
