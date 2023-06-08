@@ -92,6 +92,10 @@ class QLearning():
                 self.nll_reg,
                 params_init,
                 minimizer_kwargs={'args':(choices, rewards, lambda_reg)},**kwargs)
+        elif algo == 'da':
+            res = opt.dual_annealing(
+                self.nll_reg,
+                args=(choices, rewards, lambda_reg),**kwargs)
         elif algo == 'minimize':
             res = opt.minimize(
                 self.nll_reg,
@@ -297,7 +301,7 @@ class HetOSFQLearning(HetQLearning):
     def param_props(self):
         param_props = {
             'names': ['q0_init', 'q1_init'] + [val for pair in zip(['alpha_%i' % i for i in range(self.N_modules)],
-                                                                   ['theta_%i' for i in range(self.N_modules)],
+                                                                   ['theta_%i' % i for i in range(self.N_modules)],
                                                                    ['kappa_%i' % i for i in range(self.N_modules)]) for val in pair] + ['tau', 'beta'],
             'suggested_bounds': [(0,1),(0,1)] + [val for pair in zip([(0,1) for i in range(self.N_modules)],
                                                                      [(-1,1) for i in range(self.N_modules)],
@@ -349,7 +353,7 @@ class HetSOSFQLearning(HetQLearning):
     def param_props(self):
         param_props = {
             'names': ['q0_init', 'q1_init'] + [val for pair in zip(['alpha_%i' % i for i in range(self.N_modules)],
-                                                                   ['theta_%i' for i in range(self.N_modules)],
+                                                                   ['theta_%i' % i for i in range(self.N_modules)],
                                                                    ['kappa_%i' % i for i in range(self.N_modules)]) for val in pair] + ['tau', 'beta'],
             'suggested_bounds': [(0,1),(0,1)] + [val for pair in zip([(0,1) for i in range(self.N_modules)],
                                                                      [(-1,1) for i in range(self.N_modules)],
