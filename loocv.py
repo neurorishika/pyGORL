@@ -17,8 +17,8 @@ N = len(choices_full)
 n_jobs = 11 # number of cores to use (free to change this)
 
 # Set up the model
-model = HetSOSFQLearning(2)
-model_name = 'Het2SOSFQL'
+model = HetFQLearning(2)
+model_name = 'Het2FQL'
 algorithm = 'de'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
@@ -37,7 +37,7 @@ for i in range(N//n_jobs):
             bounds=params_bounds,
             algo=algorithm,
             # options={'disp':True,'maxiter':300}, iters=1
-            maxiter=1000, popsize=100, tol=1e-4, disp=True
+            maxiter=1000, popsize=100, tol=1e-3, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
             )
 
