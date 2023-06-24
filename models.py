@@ -80,27 +80,55 @@ class QLearning():
     # fit the model to all subjects
     def fit_all(self, choices, rewards, params_init, lambda_reg=0, algo='shgo', **kwargs):
         if algo == 'shgo':
+            bounds = kwargs['bounds']
+            # remove bounds from kwargs
+            kwargs = {k: v for k, v in kwargs.items() if k != 'bounds'}
+            print('Starting optimization with shgo algorithm')
             res = opt.shgo(
                 self.nll_reg,
-                args=(choices, rewards, lambda_reg),**kwargs)
+                args=(choices, rewards, lambda_reg),bounds=bounds,**kwargs)
         elif algo == 'de':
+            bounds = kwargs['bounds']
+            # remove bounds from kwargs
+            kwargs = {k: v for k, v in kwargs.items() if k != 'bounds'}
+            print('Starting optimization with differential evolution algorithm')
             res = opt.differential_evolution(
                 self.nll_reg,
-                args=(choices, rewards, lambda_reg),**kwargs)
+                args=(choices, rewards, lambda_reg),bounds=bounds,**kwargs)
         elif algo == 'basinhopping':
+            bounds = kwargs['bounds']
+            # remove bounds from kwargs
+            kwargs = {k: v for k, v in kwargs.items() if k != 'bounds'}
+            print('Starting optimization with basinhopping algorithm')
             res = opt.basinhopping(
                 self.nll_reg,
                 params_init,
                 minimizer_kwargs={'args':(choices, rewards, lambda_reg)},**kwargs)
         elif algo == 'da':
+            print('Starting optimization with dual annealing algorithm')
             res = opt.dual_annealing(
                 self.nll_reg,
                 args=(choices, rewards, lambda_reg),**kwargs)
         elif algo == 'minimize':
-            res = opt.minimize(
-                self.nll_reg,
-                params_init,
-                args=(choices, rewards, lambda_reg),**kwargs)
+            assert 'randomize' in kwargs.keys(), 'Must specify whether to randomize initial parameters using "randomize" variable'
+            assert 'n_restarts' in kwargs.keys(), 'Must specify number of restarts using "n_restarts" variable'
+            res_list = []
+            for X in range(kwargs['n_restarts']):
+                print('Starting optimization with minimize. Iteration: {} of {}'.format(X+1,kwargs['n_restarts']))
+                bounds = kwargs['bounds']
+                if kwargs['randomize']:
+                    # resample initial parameters
+                    for i in range(len(params_init)):
+                        params_init[i] = np.random.uniform(bounds[i][0],bounds[i][1])
+                # remove randomize and bounds from kwargs
+                kwargs_alt = {k: v for k, v in kwargs.items() if k not in ['randomize','bounds','n_restarts']}
+                res = opt.minimize(
+                    self.nll_reg,
+                    params_init,
+                    args=(choices, rewards, lambda_reg),**kwargs_alt)
+                res_list.append(res)
+            # find best result
+            res = res_list[np.argmin([r.fun for r in res_list])]
         else:
             raise ValueError('Invalid algorithm')
         return res
@@ -119,6 +147,14 @@ class QLearning():
             np.concatenate((rewards[:subject],rewards[subject+1:])),
             params_init, lambda_reg, algo, **kwargs
             )
+        return res
+    
+    # define a function to fit the model to alternate subjects
+    def fit_every_nth(self, start:int, K:int, choices, rewards, params_init, lambda_reg=0, algo='shgo', **kwargs):
+        assert start < K, 'start must be less than K'
+        choices = choices[start::K]
+        rewards = rewards[start::K]
+        res = self.fit_all(choices, rewards, params_init, lambda_reg, algo, **kwargs)
         return res
 
 # extend the class to create new models

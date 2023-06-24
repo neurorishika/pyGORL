@@ -19,7 +19,7 @@ n_jobs = 1 # number of cores to use (free to change this)
 # Set up the model
 model = FQLearning()
 model_name = 'FQL'
-algorithm = 'shgo'
+algorithm = 'minimize'
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
 params_init = model.param_props()['suggested_init']
 params_bounds = model.param_props()['suggested_bounds']
@@ -36,6 +36,7 @@ for i in range(N//n_jobs):
             subject, choices_full, rewards_full, params_init, lambda_reg=0,
             bounds=params_bounds,
             algo=algorithm,
+            randomize=True
             # options={'disp':True,'maxiter':300}, iters=1
             # maxiter=1000, popsize=100, tol=1e-3, disp=True
             ) for subject in tqdm(range(n_jobs*i, n_jobs*(i+1)))
