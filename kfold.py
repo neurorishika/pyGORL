@@ -3,6 +3,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from models import *
+from pg_models import *
 import pickle
 import os
 import multiprocessing
@@ -15,7 +16,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Fit a model to a dataset')
 # add arguments with default values
 parser.add_argument('--model', default='QL', type=str, 
-                    help='Model to fit (valid options: (Het)QL, (Het)FQL, (Het)OSQL, (Het)OSFQL, (Het)SOSFQL)')
+                    help='Model to fit (valid options: (Het)QL, (Het)FQL, (Het)OSQL, (Het)OSFQL, (Het)SOSFQL), VLP, ACLP, AdvLP')
 parser.add_argument('--algorithm', default='de', type=str,
                     help='Algorithm to use (valid options: de, shgo, minimize)')
 parser.add_argument('--n_modules', default=2, type=int,
@@ -47,6 +48,7 @@ print(start_string)
 # check for valid model
 valid_models = ['QL', 'FQL', 'OSQL', 'OSFQL', 'SOSFQL']
 valid_models += ['Het'+m for m in valid_models]
+valid_models += ['VLP', 'ACLP', 'AdvLP']
 assert args.model in valid_models, "Invalid model"
 
 # check for valid algorithm
@@ -120,10 +122,13 @@ if args.qc == 'full':
 print("{}/{} ({}) flies passed quality control".format(choices_full.shape[0], N, "{:0.2f}".format(choices_full.shape[0]/N*100)))
 
 # Set up the model and algorithm
-if 'Het' in args.model:
-    model = eval(args.model+"earning(args.n_modules)")
+if 'QL' in args.model:
+    if 'Het' in args.model:
+        model = eval(args.model+"earning(args.n_modules)")
+    else:
+        model = eval(args.model+"earning()")
 else:
-    model = eval(args.model+"earning()")
+    model = eval(args.model+"olicyGradient()")
 model_name = args.model
 algorithm = args.algorithm
 K = args.k # number of folds

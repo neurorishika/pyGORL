@@ -340,6 +340,116 @@ class VSPolicyGradient(VLPolicyGradient):
             }
         return param_props
     
-class
+class ACLPolicyGradient(VLPolicyGradient):
+    """
+    Actor-critic policy gradient model with logistic policy
+    """
+    def __init__(self, eps=1e-6, dx=0.01):
+        super().__init__(eps, dx)
     
+    def policy_update(self, choice, reward, params):
+        """
+        The policy update function
+        params: the parameters of the model
+        choice: the choice made
+        reward: the reward received
+        """
+        params = np.array(params)
+        alpha_p,alpha_q,qs = params[0], params[1], params[2:4]
+        new_params = params.copy()
+        try:
+            new_params[self.param_props()['n_l']:] = params[self.param_props()['n_l']:] + alpha_p*qs[int(choice)]*self.del_log_policy(params[self.param_props()['n_l']:])[:,int(choice)]
+            qs[int(choice)] = qs[int(choice)] + alpha_q*(reward-qs[int(choice)])
+            new_params[2:4] = qs.copy()
+        except:
+            pass
+        return new_params
     
+    def policy_gradient_learning(self, choices, rewards, params):
+        """
+        The policy gradient learning function
+        params: the parameters of the model
+        choices: the choices made
+        rewards: the rewards received
+        """
+        policy_params = np.zeros((len(choices)+1,len(params[self.param_props()['n_l']:])))
+        policy_params[0] = params[self.param_props()['n_l']:]
+        new_params = params.copy()
+        for n, (choice, reward) in enumerate(zip(choices, rewards)):
+            new_params = self.policy_update(choice, reward, new_params)
+            policy_params[n+1] = new_params[self.param_props()['n_l']:]
+        return policy_params
+    
+    def param_props(self):
+        """
+        Return the parameter properties
+        names: the names of the parameters
+        suggested_bounds: the suggested bounds for the parameters
+        suggested_init: the suggested initial values for the parameters
+        n_p: the number of policy parameters
+        """
+        param_props = {
+            'names': ['alpha_policy', 'alpha_Q_value', 'Q_0', 'Q_1','theta'],
+            'suggested_bounds': [(0,1),(0,1),(0,1),(0,1),(-10,10)],
+            'suggested_init': [0.5,0.5,0.0,0.0,0.0],
+            'n_l': 4, # number of learning parameters
+            'n_p': 1 # number of policy parameters
+            }
+        return param_props
+
+class AdvLPolicyGradient(VLPolicyGradient):
+    """
+    Advantage learning policy gradient model with logistic policy
+    """
+    def __init__(self, eps=1e-6, dx=0.01):
+        super().__init__(eps, dx)
+    
+    def policy_update(self, choice, reward, params):
+        """
+        The policy update function
+        params: the parameters of the model
+        choice: the choice made
+        reward: the reward received
+        """
+        params = np.array(params)
+        alpha_p,alpha_v,v = params[0], params[1], params[2]
+        new_params = params.copy()
+        try:
+            new_params[self.param_props()['n_l']:] = params[self.param_props()['n_l']:] + alpha_p*(reward-v)*self.del_log_policy(params[self.param_props()['n_l']:])[:,int(choice)]
+            v = v + alpha_v*(reward-v)
+            new_params[2] = v
+        except:
+            pass
+        return new_params
+    
+    def policy_gradient_learning(self, choices, rewards, params):
+        """
+        The policy gradient learning function
+        params: the parameters of the model
+        choices: the choices made
+        rewards: the rewards received
+        """
+        policy_params = np.zeros((len(choices)+1,len(params[self.param_props()['n_l']:])))
+        policy_params[0] = params[self.param_props()['n_l']:]
+        new_params = params.copy()
+        for n, (choice, reward) in enumerate(zip(choices, rewards)):
+            new_params = self.policy_update(choice, reward, new_params)
+            policy_params[n+1] = new_params[self.param_props()['n_l']:]
+        return policy_params
+    
+    def param_props(self):
+        """
+        Return the parameter properties
+        names: the names of the parameters
+        suggested_bounds: the suggested bounds for the parameters
+        suggested_init: the suggested initial values for the parameters
+        n_p: the number of policy parameters
+        """
+        param_props = {
+            'names': ['alpha_policy', 'alpha_value', 'V','theta'],
+            'suggested_bounds': [(0,1),(0,1),(0,1),(-10,10)],
+            'suggested_init': [0.5,0.5,0.0,0.0],
+            'n_l': 3, # number of learning parameters
+            'n_p': 1 # number of policy parameters
+            }
+        return param_props
