@@ -6,7 +6,7 @@ import scipy.optimize as opt # for numerical optimization
 ## STRUCTURE OF PARAMS
 # params = [learning_param1, learning_param2, ..., learning_paramN, model_param1, model_param2, ..., model_paramM]
     
-class PolicyGradient():
+class VLPolicyGradient():
     """
     Single State Policy gradient model with logistic policy
     Serve as a base class for the different policy gradient models
@@ -302,7 +302,7 @@ class PolicyGradient():
         return res
     
 # extend the policy gradient model to include a softmax function
-class PolicyGradientSoftmax(PolicyGradient):
+class VSPolicyGradient(VLPolicyGradient):
     """
     Policy gradient model with softmax function
     """
@@ -318,7 +318,7 @@ class PolicyGradientSoftmax(PolicyGradient):
         params = np.array(params)
         theta_0, theta_1 = params[0], params[1]
         softmax = lambda t0, t1: np.exp(t0)/(np.exp(t0)+np.exp(t1))
-        policy = np.array([softmax(theta_0, theta_1), softmax(theta_1, theta_0)])
+        policy = np.array([softmax(theta_0, theta_1), 1-softmax(theta_0, theta_1)])
         policy = np.clip(policy, self.eps, 1-self.eps)
         return policy
     
@@ -339,5 +339,7 @@ class PolicyGradientSoftmax(PolicyGradient):
             'n_p': 2 # number of policy parameters
             }
         return param_props
+    
+class
     
     
