@@ -18,6 +18,8 @@ parser.add_argument('--model', default='QL', type=str,
                     help='Model to fit (valid options: (Het)QL, (Het)FQL, (Het)OSQL, (Het)OSFQL, (Het)SOSFQL)')
 parser.add_argument('--algorithm', default='de', type=str,
                     help='Algorithm to use (valid options: de, shgo, minimize)')
+parser.add_argument('--n_modules', default=2, type=int,
+                    help='Number of modules for heterogeneous models')
 parser.add_argument('--k', default=2, type=int,
                     help='Number of folds for cross-validation')
 parser.add_argument('--n_jobs', default=2, type=int,
@@ -118,7 +120,10 @@ if args.qc == 'full':
 print("{}/{} ({}) flies passed quality control".format(choices_full.shape[0], N, "{:0.2f}".format(choices_full.shape[0]/N*100)))
 
 # Set up the model and algorithm
-model = eval(args.model+"earning()")
+if 'Het' in args.model:
+    model = eval(args.model+"earning(args.n_modules)")
+else:
+    model = eval(args.model+"earning()")
 model_name = args.model
 algorithm = args.algorithm
 K = args.k # number of folds
