@@ -317,7 +317,7 @@ class HetQLearning(QLearning):
         qs = np.zeros((len(choices)+1,2,self.N_modules))
         qs[:,0,:] = params[:2]
 
-        n_q = self.param_props()()['n_q']
+        n_q = self.param_props()['n_q']
         # update q values
         for i in range(len(choices)):
             for j in range(self.N_modules): # loop over modules
