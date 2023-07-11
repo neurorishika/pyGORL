@@ -344,8 +344,10 @@ class ACLPolicyGradient(VLPolicyGradient):
     """
     Actor-critic policy gradient model with logistic policy
     """
-    def __init__(self, eps=1e-6, dx=0.01):
+    def __init__(self, eps=1e-6, dx=0.01,q_type='q'):
         super().__init__(eps, dx)
+        assert q_type in ['q','fq','osfq'], 'q_type must be one of q, fq, osfq'
+        self.q_type = q_type
     
     def policy_update(self, choice, reward, params):
         """
@@ -355,12 +357,36 @@ class ACLPolicyGradient(VLPolicyGradient):
         reward: the reward received
         """
         params = np.array(params)
-        alpha_p,alpha_q,qs = params[0], params[1], params[2:4]
+
+        if self.q_type == 'q':
+            alpha_p,alpha_q,qs = params[0], params[1], params[2:4]
+        elif self.q_type == 'fq':
+            alpha_p,alpha_q,alpha_q_forget,qs = params[0], params[1], params[2], params[3:5]
+        elif self.q_type == 'osfq':
+            alpha_p,alpha_q,alpha_q_forget,kappa,qs = params[0], params[1], params[2], params[3], params[4:6]
+
         new_params = params.copy()
         try:
             new_params[self.param_props()['n_l']:] = params[self.param_props()['n_l']:] + alpha_p*qs[int(choice)]*self.del_log_policy(params[self.param_props()['n_l']:])[:,int(choice)]
+            
+            if reward != 0:
+                qs[int(choice)] = qs[int(choice)] + alpha_q*(reward-qs[int(choice)])
+            else:
+                if 'os' in self.q_type:
+                    qs[int(choice)] = qs[int(choice)] + alpha_q*(kappa-qs[int(choice)])
+                else:
+                    qs[int(choice)] = qs[int(choice)] * (1-alpha_q)
+
             qs[int(choice)] = qs[int(choice)] + alpha_q*(reward-qs[int(choice)])
-            new_params[2:4] = qs.copy()
+            if 'f' in self.q_type:
+                qs[1-int(choice)] = qs[1-int(choice)]*(1-alpha_q_forget)
+            
+            if self.q_type == 'q':
+                new_params[2:4] = qs.copy()
+            elif self.q_type == 'fq':
+                new_params[3:5] = qs.copy()
+            elif self.q_type == 'osfq':
+                new_params[4:6] = qs.copy()
         except:
             pass
         return new_params
@@ -389,10 +415,13 @@ class ACLPolicyGradient(VLPolicyGradient):
         n_p: the number of policy parameters
         """
         param_props = {
-            'names': ['alpha_policy', 'alpha_Q_value', 'Q_0', 'Q_1','theta'],
-            'suggested_bounds': [(0,1),(0,1),(0,1),(0,1),(-10,10)],
-            'suggested_init': [0.5,0.5,0.0,0.0,0.0],
-            'n_l': 4, # number of learning parameters
+            'names': ['alpha_policy', 'alpha_Q_value'] + ([] if self.q_type == 'q' else ['alpha_Q_forget'] if self.q_type == 'fq' else ['alpha_Q_forget','kappa']) +
+                     ['Q_0', 'Q_1','theta'],
+            'suggested_bounds': [(0,1),(0,1)]+ ([] if self.q_type == 'q' else [(0,1)] if self.q_type == 'fq' else [(0,1),(0,1)]) +
+                                [(0,1),(0,1),(-10,10)],
+            'suggested_init': [0.5,0.5] + ([] if self.q_type == 'q' else [0.5] if self.q_type == 'fq' else [0.5,0.5]) + 
+                                [0.,0.,0.],
+            'n_l': 4 if self.q_type == 'q' else 5 if self.q_type == 'fq' else 6, # number of learning parameters
             'n_p': 1 # number of policy parameters
             }
         return param_props

@@ -21,6 +21,8 @@ parser.add_argument('--algorithm', default='de', type=str,
                     help='Algorithm to use (valid options: de, shgo, minimize)')
 parser.add_argument('--n_modules', default=2, type=int,
                     help='Number of modules for heterogeneous models')
+parser.add_argument('--q_type', default='q', type=str,
+                    help='Type of Q-values to use (valid options: q, fq, osfq)')
 parser.add_argument('--k', default=2, type=int,
                     help='Number of folds for cross-validation')
 parser.add_argument('--n_jobs', default=2, type=int,
@@ -50,6 +52,9 @@ valid_models = ['QL', 'FQL', 'OSQL', 'OSFQL', 'SOSFQL']
 valid_models += ['Het'+m for m in valid_models]
 valid_models += ['VLP', 'ACLP', 'AdvLP']
 assert args.model in valid_models, "Invalid model"
+
+if args.model == 'ACLP':
+    assert args.q_type in ['q', 'fq', 'osfq'], "Invalid Q-value type"
 
 # check for valid algorithm
 assert args.algorithm in ['de', 'shgo', 'minimize'], "Invalid algorithm"
@@ -128,7 +133,11 @@ if 'QL' in args.model:
     else:
         model = eval(args.model+"earning()")
 else:
-    model = eval(args.model+"olicyGradient()")
+    if args.model == 'ACLP':
+        model = eval(args.model+"olicyGradient(q_type=args.q_type)")
+    else:
+        model = eval(args.model+"olicyGradient()")
+
 model_name = args.model
 algorithm = args.algorithm
 K = args.k # number of folds
@@ -140,6 +149,7 @@ start_str = "Initializing fit of {} model using {} algorithm with {} cores".form
 print(start_str)
 print("".join(["="]*len(start_str)))
 print("Parameters to be estimated: ", ", ".join(model.param_props()['names']))
+
 
 # Set up the initial parameters and bounds
 params_init = model.param_props()['suggested_init']
@@ -174,6 +184,12 @@ else:
 
 # save a single file
 dt = datetime.now().strftime('%Y%m%d')
+
+if args.model == 'ACLP':
+    model_name = args.model + '_' + args.q_type.upper()
+if 'Het' in args.model:
+    model_name = 'Het'+args.n_modules+model_name[3:]
+
 with open(args.output+f'{model_name}_{K}cv_{algorithm}_{dt}.pkl','wb') as f:
     pickle.dump(results,f)
 
