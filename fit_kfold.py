@@ -37,6 +37,8 @@ parser.add_argument('--output', default='fitted_models/dmData_06-07-2023/', type
                     help='Path to output directory')
 parser.add_argument('--qc', default='full', type=str,
                     help='Whether to perform quality control (valid options: minimal, full, none)')
+parser.add_argument('--filterdate', default='none', type=str,
+                    help='Whether to filter by date (valid options: none, yyyy-mm-dd)')
 
 # parse the arguments from standard input
 args = parser.parse_args()
@@ -105,6 +107,15 @@ if not os.path.exists(args.output):
 
 # check for valid quality control option
 assert args.qc in ['minimal', 'full', 'none'], "Invalid quality control option"
+if args.filterdate != 'none':
+    try:
+        last_date = args.filterdate + ' 00:00:00'
+        args.filterdate = pd.to_datetime(args.filterdate, format='%Y-%m-%d %H:%M:%S')
+    except:
+        print("Warning: Invalid date format, skipping date filter")
+        last_date = 'none'
+else:
+    last_date = 'none'
 
 # Importing the dataset
 print("Loading data from folder: ", args.data)
@@ -123,7 +134,8 @@ if args.qc == 'minimal':
 if args.qc == 'full':
     qc = np.loadtxt(args.data+'quality_control.csv', delimiter=',').astype(bool)
     meta = pd.read_csv(args.data+'metadata.csv')
-    meta = meta[qc].groupby('Fly Experiment').head(3)
+    meta = meta[qc]
+    meta = meta[meta['Experiment Start Time'] < last_date].groupby('Fly Experiment').head(3)
     choices_full = choices_full[meta.index]
     rewards_full = rewards_full[meta.index]
 print("{}/{} ({}) flies passed quality control".format(choices_full.shape[0], N, "{:0.2f}".format(choices_full.shape[0]/N*100)))
