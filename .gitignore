@@ -151,14 +151,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# temp folder
+# temp and .archive folder
 temp/
-
-# key files anywhere in the project directory and subfolders
-*.key
-
-# all subfolders of 'data' folder
-data/*/
-
-# .archive folder
 .archive/
+# key files anywhere in the project directory and subfolders
+**/*.key
+# data files anywhere in the project directory and subfolders
+**/data/*
+# unprotected zip files anywhere in the project directory and subfolders
+**/*.zip
