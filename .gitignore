@@ -153,3 +153,9 @@ cython_debug/
 
 # temp folder
 temp/
+
+# key file
+key.txt
+
+# all subfolders of 'data' folder
+data/*/

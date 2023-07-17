@@ -7,7 +7,7 @@ license = "BSD 3-clause"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.13"
 numpy = "^1.25.1"
 pandas = "^2.0.3"
 matplotlib = "^3.7.2"

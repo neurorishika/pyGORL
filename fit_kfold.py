@@ -33,7 +33,7 @@ parser.add_argument('--lambda_reg', default=0, type=float,
                     help='Regularization parameter')
 parser.add_argument('--data', default='data/dmData_06-07-2023/', type=str,
                     help='Path to data files')
-parser.add_argument('--output', default='fitted_models/dmData_06-07-2023/', type=str,
+parser.add_argument('--output', default='trained_params/dmData_06-07-2023/', type=str,
                     help='Path to output directory')
 parser.add_argument('--qc', default='full', type=str,
                     help='Whether to perform quality control (valid options: minimal, full, none)')
@@ -44,10 +44,9 @@ parser.add_argument('--filterdate', default='none', type=str,
 args = parser.parse_args()
 
 start_string = """
-Cognitive Modeling Framework in Python
-======================================
-Author: Rishika Mohanta 
-Turner Lab, Janelia Research Campus
+PyGORL: Python based fitting of Globally Optimized Reinforcement Learning algorithms
+====================================================================================
+Author: Rishika Mohanta, Turner Lab, Janelia Research Campus, Ashburn VA
 """
 print(start_string)
 
@@ -101,10 +100,10 @@ assert args.lambda_reg >= 0, "Invalid regularization parameter"
 # check for valid data path
 assert os.path.exists(args.data), "Invalid data path"
 
-# check for valid output path
+# check for valid output path creating all directories if necessary
 if not os.path.exists(args.output):
     print("Warning: Invalid output path, creating directory")
-    os.mkdir(args.output)
+    os.makedirs(args.output)
 
 # check for valid quality control option
 assert args.qc in ['minimal', 'full', 'none'], "Invalid quality control option"

@@ -1,4 +1,4 @@
-# PyGORL: Python implementation of Globally Optimized Reinforcement Learning
+# PyGORL: Python based fitting of Globally Optimized Reinforcement Learning algorithms
 
 Author: [Rishika Mohanta](https://neurorishika.github.io)
 
@@ -17,4 +17,4 @@ As of right now the following algorithms are implemented:
 
 Data is generated from a 2-armed bandit task performed by GR64f-UAS/CsChrimson-Gal4 flies with optogenetic rewards.
 
-For fitting the models, call: `python fit_kfold.py` and use `--help` for more information on the arguments.
+For fitting the models, call: `python fit_kfold.py` and use `--help` for more information on the arguments. To fit all models on a Windows machine, use `autorun.bat' to start a new shell process for each model. Every time you run the batch file, it spawns the next job.
