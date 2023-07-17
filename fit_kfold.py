@@ -7,6 +7,8 @@ import os
 import multiprocessing
 from datetime import datetime
 import argparse
+import rdp_client as rpd
+import shutil
 
 ## Importing the models
 from pygorl.cogpolicy import *
@@ -98,7 +100,22 @@ elif args.n_jobs < 1:
 assert args.lambda_reg >= 0, "Invalid regularization parameter"
 
 # check for valid data path
-assert os.path.exists(args.data), "Invalid data path"
+data_was_encrypted = False
+if not os.path.exists(args.data):
+    # check if encrypted data exists
+    if args.data[-1] == '/':
+        temp = args.data[:-1]+'.ezip'
+    else:
+        temp = args.data+'.ezip'
+    print("Searching for encrypted data in: ", temp)
+    if os.path.exists(temp):
+        print("Warning: Encrypted data found, decrypting")
+        rpd.unlock_and_unzip_file(temp)
+        if not os.path.exists(args.data):
+            raise Exception("Invalid data path")
+        data_was_encrypted = True
+    else:
+        raise Exception("Invalid data path")
 
 # check for valid output path creating all directories if necessary
 if not os.path.exists(args.output):
@@ -214,7 +231,9 @@ if 'Het' in args.model:
 with open(args.output+f'{model_name}_{K}cv_{algorithm}_{dt}.pkl','wb') as f:
     pickle.dump(results,f)
 
-
+if data_was_encrypted:
+    print("Warning: Deleting decrypted data")
+    shutil.rmtree(args.data)
 
 
 

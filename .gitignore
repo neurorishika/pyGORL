@@ -159,3 +159,6 @@ temp/
 
 # all subfolders of 'data' folder
 data/*/
+
+# .archive folder
+.archive/

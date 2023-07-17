@@ -15,6 +15,10 @@ As of right now the following algorithms are implemented:
 - [x] Actor-Critic Policy Gradient with omission-sensitivity and forgetting variants (ACPL, ACPL-F, ACPL-OSF)
 - [x] Advantage Actor-Critic Policy Gradient (AdvPL)
 
-Data is generated from a 2-armed bandit task performed by GR64f-UAS/CsChrimson-Gal4 flies with optogenetic rewards.
+Data is generated from a 2-armed bandit task performed by GR64f-UAS/CsChrimson-Gal4 flies with optogenetic rewards. Data is protected using encryption and can be decrypted using the key provided by the authors. 
 
-For fitting the models, call: `python fit_kfold.py` and use `--help` for more information on the arguments. To fit all models on a Windows machine, use `autorun.bat' to start a new shell process for each model. Every time you run the batch file, it spawns the next job.
+The data is stored in the `data` folder.
+
+USE [Poetry](https://python-poetry.org/) to install dependencies.
+
+For fitting the models, call: `poetry run python fit_kfold.py` and use `--help` for more information on the arguments. To fit all models on a Windows machine, use `autorun.bat' to start a new shell process for each model. Every time you run the batch file, it spawns the next job.

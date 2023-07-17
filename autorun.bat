@@ -1,1 +1,1 @@
-python autorun.py
+poetry run python autorun.py
