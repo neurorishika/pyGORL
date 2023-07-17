@@ -154,8 +154,8 @@ cython_debug/
 # temp folder
 temp/
 
-# key file
-key.txt
+# key files anywhere in the project directory and subfolders
+*.key
 
 # all subfolders of 'data' folder
 data/*/
