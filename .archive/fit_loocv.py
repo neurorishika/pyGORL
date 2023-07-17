@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from cogq import *
-from cogpolicy import *
+from pygorl.cogq import *
+from pygorl.cogpolicy import *
 import shutil
 import pickle
 import os

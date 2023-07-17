@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pygorl"
+version = "0.1.0"
+description = "Python-based fitting of 1-state MDP Reinforcement Learning algorithms using Global Optimization"
+authors = ["Rishika Mohanta <neurorishika@gmail.com>"]
+license = "BSD 3-clause"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.25.1"
+pandas = "^2.0.3"
+matplotlib = "^3.7.2"
+scipy = "^1.11.1"
+joblib = "^1.3.1"
+tqdm = "^4.65.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

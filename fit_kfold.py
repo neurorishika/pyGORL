@@ -9,8 +9,8 @@ from datetime import datetime
 import argparse
 
 ## Importing the models
-from cogpolicy import *
-from cogq import *
+from pygorl.cogpolicy import *
+from pygorl.cogq import *
 
 # create a parser object
 parser = argparse.ArgumentParser(description='Fit a model to a dataset')
@@ -50,6 +50,7 @@ Author: Rishika Mohanta
 Turner Lab, Janelia Research Campus
 """
 print(start_string)
+
 
 # check for valid model
 valid_models = ['QL', 'FQL', 'OSQL', 'OSFQL', 'SOSFQL']
