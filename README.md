@@ -1,5 +1,4 @@
 # PyGORL: Python implementation of Globally Optimized Reinforcement Learning
-# ==========================================================================
 
 Author: [Rishika Mohanta](https://neurorishika.github.io)
 
