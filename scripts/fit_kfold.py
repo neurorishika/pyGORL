@@ -7,12 +7,12 @@ import os
 import multiprocessing
 from datetime import datetime
 import argparse
-import rdp_client as rpd
 import shutil
 
 ## Importing the models
-from pygorl.cogpolicy import *
-from pygorl.cogq import *
+from pygorl.cogpolicy import VLPolicyGradient,ACLPolicyGradient,AdvLPolicyGradient
+from pygorl.cogq import QLearning,FQLearning,OSQLearning,OSFQLearning,SOSFQLearning,HetQLearning,HetFQLearning,HetOSQLearning,HetOSFQLearning,HetSOSFQLearning
+from pygorl.rdp_client import unlock_and_unzip_file
 
 # create a parser object
 parser = argparse.ArgumentParser(description='Fit a model to a dataset')
@@ -23,8 +23,10 @@ parser.add_argument('--algorithm', default='de', type=str,
                     help='Algorithm to use (valid options: de, shgo, minimize)')
 parser.add_argument('--n_modules', default=2, type=int,
                     help='Number of modules for heterogeneous models')
+parser.add_argument('--mix_rule', default='weighted', type=str,
+                    help='Mixing function for heterogeneous models (valid options: weighted, max)')
 parser.add_argument('--q_type', default='q', type=str,
-                    help='Type of Q-values to use (valid options: q, fq, osfq)')
+                    help='Type of Q-values to use for AC policy (valid options: q, fq, osfq)')
 parser.add_argument('--k', default=2, type=int,
                     help='Number of folds for cross-validation')
 parser.add_argument('--randomize', default=-1, type=int,
@@ -33,8 +35,8 @@ parser.add_argument('--n_jobs', default=2, type=int,
                     help='Number of cores to use, -1 for all cores')
 parser.add_argument('--lambda_reg', default=0, type=float,
                     help='Regularization parameter')
-parser.add_argument('--data', default='data/dmData_06-07-2023/', type=str,
-                    help='Path to data files')
+parser.add_argument('--data', default='data/dmData_06-07-2023.ezip', type=str,
+                    help='Path to encrypted data file (if multifile, give the first file)')
 parser.add_argument('--output', default='processed_data/dmData_06-07-2023/', type=str,
                     help='Path to output directory')
 parser.add_argument('--qc', default='full', type=str,
@@ -100,22 +102,24 @@ elif args.n_jobs < 1:
 assert args.lambda_reg >= 0, "Invalid regularization parameter"
 
 # check for valid data path
-data_was_encrypted = False
-if not os.path.exists(args.data):
-    # check if encrypted data exists
-    if args.data[-1] == '/':
-        temp = args.data[:-1]+'.ezip'
-    else:
-        temp = args.data+'.ezip'
-    print("Searching for encrypted data in: ", temp)
-    if os.path.exists(temp):
-        print("Warning: Encrypted data found, decrypting")
-        rpd.unlock_and_unzip_file(temp)
-        if not os.path.exists(args.data):
-            raise Exception("Invalid data path")
-        data_was_encrypted = True
-    else:
-        raise Exception("Invalid data path")
+if not (args.data.endswith('.ezip') or args.data.endswith('.ezip.000')) or not os.path.exists(args.data):
+    print("Warning: Invalid data path, provide path to encrypted data file")
+    exit(1)
+
+# check if a directory with the same name as the data file exists
+if os.path.exists(args.data.split('.ezip')[0]+'/'):
+    print("Warning: Directory with same name as data file exists, overwriting")
+    shutil.rmtree(args.data.split('.ezip')[0]+'/')
+
+# decrypt and unzip the data file
+if len(args.data.split('.')) == 2:
+    unlock_and_unzip_file(args.data)
+elif len(args.data.split('.')) == 3:
+    unlock_and_unzip_file(args.data, multifile=True)
+else:
+    raise Exception("Invalid data path")
+
+data_path = args.data.split('.ezip')[0]+'/'
 
 # check for valid output path creating all directories if necessary
 if not os.path.exists(args.output):
@@ -135,9 +139,9 @@ else:
     last_date = 'none'
 
 # Importing the dataset
-print("Loading data from folder: ", args.data)
-choices_full = np.loadtxt(args.data+'choices.csv', delimiter=',')
-rewards_full = np.loadtxt(args.data+'rewards.csv', delimiter=',')
+print("Loading data from folder: ", data_path)
+choices_full = np.loadtxt(data_path+'choices.csv', delimiter=',')
+rewards_full = np.loadtxt(data_path+'rewards.csv', delimiter=',')
 assert choices_full.shape == rewards_full.shape, "Choices and rewards are not the same shape"
 print("Data loaded successfully with N = {} flies and {} maximum trials".format(choices_full.shape[0], choices_full.shape[1]))
 
@@ -145,12 +149,12 @@ N = choices_full.shape[0] # number of flies
 
 # Perform quality control
 if args.qc == 'minimal':
-    qc = np.loadtxt(args.data+'quality_control.csv', delimiter=',').astype(bool)
+    qc = np.loadtxt(data_path+'quality_control.csv', delimiter=',').astype(bool)
     choices_full = choices_full[qc]
     rewards_full = rewards_full[qc]
 if args.qc == 'full':
-    qc = np.loadtxt(args.data+'quality_control.csv', delimiter=',').astype(bool)
-    meta = pd.read_csv(args.data+'metadata.csv')
+    qc = np.loadtxt(data_path+'quality_control.csv', delimiter=',').astype(bool)
+    meta = pd.read_csv(data_path+'metadata.csv')
     meta = meta[qc]
     meta = meta[meta['Experiment Start Time'] < last_date].groupby('Fly Experiment').head(3)
     choices_full = choices_full[meta.index]
@@ -167,7 +171,7 @@ if args.randomize > 0:
 # Set up the model and algorithm
 if 'QL' in args.model:
     if 'Het' in args.model:
-        model = eval(args.model+"earning(args.n_modules)")
+        model = eval(args.model+"earning(N_modules=args.n_modules,mix_rule=args.mix_rule)")
     else:
         model = eval(args.model+"earning()")
 else:
@@ -226,14 +230,13 @@ dt = datetime.now().strftime('%Y%m%d')
 if args.model == 'ACLP':
     model_name = args.model + '_' + args.q_type.upper()
 if 'Het' in args.model:
-    model_name = 'Het'+args.n_modules+model_name[3:]
+    model_name = 'Het'+args.n_modules+model_name[3:]+'_'+args.mix_rule[0]
 
 with open(args.output+f'{model_name}_{K}cv_{algorithm}_{dt}.pkl','wb') as f:
     pickle.dump(results,f)
 
-if data_was_encrypted:
-    print("Warning: Deleting decrypted data")
-    shutil.rmtree(args.data)
+print("Warning: Deleting decrypted data")
+shutil.rmtree(data_path)
 
 
 

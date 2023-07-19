@@ -4,21 +4,27 @@ import os
 from subprocess import call
 
 experiments_to_run = [
-    ["python", "fit_kfold.py", "--model", "QL", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "FQL", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "OSQL", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "OSFQL", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "SOSFQL", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "HetQL", "--filterdate", "2023-06-10", "--n_modules", "2"],
-    ["python", "fit_kfold.py", "--model", "HetFQL", "--filterdate", "2023-06-10", "--n_modules", "2"],
-    ["python", "fit_kfold.py", "--model", "HetOSQL", "--filterdate", "2023-06-10", "--n_modules", "2"],
-    ["python", "fit_kfold.py", "--model", "HetOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2"],
-    ["python", "fit_kfold.py", "--model", "HetSOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2"],
-    ["python", "fit_kfold.py", "--model", "VLP", "--filterdate", "2023-06-10"],
-    ["python", "fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "q"],
-    ["python", "fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "fq"],
-    ["python", "fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "osfq"],
-    ["python", "fit_kfold.py", "--model", "AdvLP", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "QL", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "FQL", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "OSQL", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "OSFQL", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "SOSFQL", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "weighted"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "weighted"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetOSQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "weighted"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "weighted"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetSOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "weighted"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "max"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "max"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetOSQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "max"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "max"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "HetSOSFQL", "--filterdate", "2023-06-10", "--n_modules", "2", "--mix_rule", "max"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "VLP", "--filterdate", "2023-06-10"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "q"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "fq"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "ACLP", "--filterdate", "2023-06-10", "--q_type", "osfq"],
+    ["poetry", "run", "python", "scripts/fit_kfold.py", "--model", "AdvLP", "--filterdate", "2023-06-10"],
+
 ]
 
 while True:
