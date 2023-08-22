@@ -119,11 +119,11 @@ def zip_and_lock_folder(data2zip,key_dir='key.key',multifile=False,split_size_by
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Lock and unlock files.')
-    parser.add_argument('--encrypt', default='', dtype=str, help='Folder to encrypt.')
-    parser.add_argument('--decrypt', default='', dtype=str, help='File to decrypt.')
-    parser.add_argument('--key_dir', default='key.key', dtype=str, help='Directory of key.')
-    parser.add_argument('--multifile', default=False, dtype=bool, help='Whether to split zip files into multiple files.')
-    parser.add_argument('--split_size_bytes', default=50_000_000, dtype=int, help='Size of each split file in bytes. Default is 50MB.')
+    parser.add_argument('--encrypt', default='', type=str, help='Folder to encrypt.')
+    parser.add_argument('--decrypt', default='', type=str, help='File to decrypt.')
+    parser.add_argument('--key_dir', default='key.key', type=str, help='Directory of key.')
+    parser.add_argument('--multifile', default=False, type=bool, help='Whether to split zip files into multiple files.')
+    parser.add_argument('--split_size_bytes', default=50_000_000, type=int, help='Size of each split file in bytes. Default is 50MB.')
     args = parser.parse_args()
 
     assert args.encrypt != '' or args.decrypt != '', "Insufficient arguments provided. Please provide a file or folder to encrypt or decrypt."
