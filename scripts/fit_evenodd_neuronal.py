@@ -9,6 +9,7 @@ from datetime import datetime
 import argparse
 import shutil
 import gzip
+from joblib import Parallel, delayed
 
 ## Importing the data protection module
 from pygorl.rdp_client import unlock_and_unzip_file
@@ -19,6 +20,7 @@ class MushroomBody:
     def __init__(self, mu_inh=0.1, hr=0.9, lr=0.5, up_dr=5.0, fb_syn=0.1, fb_trans=0.1, fb_up=1.0):
         self.hr = hr  # homeostatic plasticity rate
         self.lr = lr  # learning rate
+        self.eps = 1e-2  # small number to avoid division by zero
         self.w_KC_pMBON = np.array([1.0, 1.0])  # weights from KC to MBON (appetitive)
         self.w_KC_nMBON = np.array([1.0, 1.0])  # weights from KC to MBON (aversive)
         # mutual inhibition between MBONs (Felsenberg et al., 2018)
@@ -29,10 +31,10 @@ class MushroomBody:
             -1.0 * fb_syn
         )  # weight from appetitive MBON to reward DANs (inhibitory to subtract reward expectation)
         self.w_nMBON_nDANs = (
-            -1.0 * fb_syn
+            0.0 * fb_syn
         )  # weight from aversive MBON to punishment DANs (inhibitory to subtract punishment expectation)
         self.w_pMBON_nDANs = (
-            1.0 * fb_trans
+            0.0 * fb_trans
         )  # weight from appetitive MBON to punishment DANs (excitatory to add reward expectation)
         self.w_nMBON_pDANs = (
             1.0 * fb_trans
@@ -48,10 +50,10 @@ class MushroomBody:
         self.w_U_pDANs = 1.0 * fb_up  # weight from upwind neuron to reward DANs
         self.w_U_nDANs = 0.0  # weight from upwind neuron to punishment DANs
         # Activation function
-        self.activation = lambda x: x if x > 0 else 0  # ReLU
+        self.activation = lambda x: (1 / self.eps if x > 1 / self.eps else x) if x > 0 else 0  # ReLU
 
     # get the upwind drive for each odor without causing plasticity
-    def upwind_drive(self, time_since_last_trial=1):
+    def upwind_drive(self):
         """
         A function to calculate the upwind drive for each odor without causing plasticity
         
@@ -64,8 +66,8 @@ class MushroomBody:
         for KC_activation in [np.array([1, 0]), np.array([0, 1])]:
 
             # Step 1: calculate the KC MBON weights after homeostatic plasticity (exponential decay back to 1)
-            w_KC_pMBON_ = self.w_KC_pMBON + (1 - self.w_KC_pMBON) * (1 - np.exp(-self.hr * time_since_last_trial))
-            w_KC_nMBON_ = self.w_KC_nMBON + (1 - self.w_KC_nMBON) * (1 - np.exp(-self.hr * time_since_last_trial))
+            w_KC_pMBON_ = self.w_KC_pMBON + (1 - self.w_KC_pMBON) * (1 - np.exp(-self.hr))
+            w_KC_nMBON_ = self.w_KC_nMBON + (1 - self.w_KC_nMBON) * (1 - np.exp(-self.hr))
 
             # Step 2: calculate the MBON activations
             MBON_activation = np.array(
@@ -89,7 +91,7 @@ class MushroomBody:
 
         return drives
 
-    def trial_plasticity(self, odor, reward, time_since_last_trial=1):
+    def trial_plasticity(self, odor, reward):
         """
         A function to calculate the plasticity after a trial
         
@@ -121,8 +123,8 @@ class MushroomBody:
             nDAN_activation = 0
 
         # Step 1: calculate the KC MBON weights after homeostatic plasticity (exponential decay back to 1)
-        self.w_KC_pMBON = self.w_KC_pMBON + (1 - self.w_KC_pMBON) * (1 - np.exp(-self.hr * time_since_last_trial))
-        self.w_KC_nMBON = self.w_KC_nMBON + (1 - self.w_KC_nMBON) * (1 - np.exp(-self.hr * time_since_last_trial))
+        self.w_KC_pMBON = self.w_KC_pMBON + (1 - self.w_KC_pMBON) * (1 - np.exp(-self.hr))
+        self.w_KC_nMBON = self.w_KC_nMBON + (1 - self.w_KC_nMBON) * (1 - np.exp(-self.hr))
 
         # Step 2: calculate the MBON activations
         MBON_activation = np.array(
@@ -148,13 +150,17 @@ class MushroomBody:
             pDAN_activation
             + self.w_U_pDANs * upwind_drive
             + self.w_pMBON_pDANs * MBON_updated[0]
+            - self.w_pMBON_pDANs  # to account for adaptation to typical DAN activation
             + self.w_nMBON_pDANs * MBON_updated[1]
+            - self.w_nMBON_pDANs  # to account for adaptation to typical DAN activation
         )
         nDAN_activation = self.activation(
             nDAN_activation
             + self.w_U_nDANs * upwind_drive
             + self.w_pMBON_nDANs * MBON_updated[0]
+            - self.w_pMBON_nDANs  # to account for adaptation to typical DAN activation
             + self.w_nMBON_nDANs * MBON_updated[1]
+            - self.w_nMBON_nDANs  # to account for adaptation to typical DAN activation
         )
 
         # Step 6: calculate the plasticity and update the weights
@@ -251,14 +257,16 @@ def normalized_log_likelihood(predictions, observations):
 # create a parser object
 parser = argparse.ArgumentParser(description="Fit a model to a dataset")
 # add arguments with default values
-parser.add_argument("--algorithm", default="de", type=str, help="Algorithm to use (valid options: de, shgo, minimize)")
+parser.add_argument(
+    "--algorithm", default="minimize", type=str, help="Algorithm to use (valid options: de, shgo, minimize)"
+)
 parser.add_argument(
     "--randomize",
     default=-1,
     type=int,
     help="Whether to randomize the data before fitting (valid options: -1 for no, positive integer for seed)",
 )
-parser.add_argument("--n_jobs", default=2, type=int, help="Number of cores to use, -1 for all cores")
+parser.add_argument("--n_jobs", default=-1, type=int, help="Number of cores to use, -1 for all cores")
 parser.add_argument(
     "--data",
     default="data/dmData_06-07-2023.ezip",
@@ -299,70 +307,85 @@ if args.algorithm == "shgo":
     algo_params["options"] = {"disp": True, "maxiter": 300}
     algo_params["iters"] = 1
 if args.algorithm == "minimize":
-    algo_params["maxiter"] = 1000
     algo_params["tol"] = 1e-3
-    algo_params["disp"] = True
-    algo_params["randomize"] = True
-    algo_params["n_restarts"] = 20
 
 # setup the model fitting
 
 # for now, we will ignore
 # 1) cross modal plasticity so mu_inh = 0
 # 2) cross modal excitation so fb_trans = 0
-ignored_params = {"mu_inh": 0.0, "fb_trans": 0.0}
+ignored_params = {"mu_inh": 0.0, "fb_syn": 0.0}
+
+
+def loglik(params, choices, rewards):
+    # returns the log likelihood of the data given the parameters
+    hr, lr, up_dr, fb_trans, fb_up = params
+    # initialize the mushroom body
+    sum_log_lik = 0
+
+    def sub(i):
+        MB = MushroomBody(hr=hr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, **ignored_params)
+        upwind_drives = []
+        for j in range(len(choices[i])):
+            upwind_drive = MB.upwind_drive()
+            # apply softmax to upwind drives
+            upwind_drive = np.exp(upwind_drive) / np.sum(np.exp(upwind_drive))
+            # add to the list
+            upwind_drives.append(upwind_drive)
+            # randomly choose the odor
+            MB.trial_plasticity(choices[i][j], rewards[i][j])
+        upwind_drives = np.array(upwind_drives)
+        # calculate the log likelihood (bernoulli)
+        log_lik = np.sum(np.log(upwind_drives[:, 1]) * choices[i] + np.log(upwind_drives[:, 0]) * (1 - choices[i]))
+        return log_lik
+
+    # use joblib to parallelize the computation
+    if args.n_jobs == -1:
+        n_jobs = multiprocessing.cpu_count()
+    else:
+        n_jobs = args.n_jobs
+    with Parallel(n_jobs=n_jobs) as parallel:
+        results = parallel(delayed(sub)(i) for i in range(len(choices)))
+        sum_log_lik = np.sum(results)
+    return -sum_log_lik
 
 
 def fit_MB(choices, rewards):
-    # returns the log likelihood of the data given the parameters
-    def optimize(params):
-        hr, lr, up_dr, fb_syn, fb_up = params
-        # initialize the mushroom body
-        sum_log_lik = 0
-        for i in range(len(choices)):
-            MB = MushroomBody(hr=hr, lr=lr, up_dr=up_dr, fb_syn=fb_syn, fb_up=fb_up, **ignored_params)
-            upwind_drives = []
-            for j in range(len(choices[i])):
-                upwind_drive = MB.upwind_drive(1)
-                # apply softmax to upwind drives
-                upwind_drive = np.exp(upwind_drive) / np.sum(np.exp(upwind_drive))
-                # add to the list
-                upwind_drives.append(upwind_drive)
-                # randomly choose the odor
-                MB.trial_plasticity(choices[i][j], rewards[i][j], 1)
-            upwind_drives = np.array(upwind_drives)
-            # calculate the log likelihood (bernoulli)
-            log_lik = np.sum(np.log(upwind_drives[:, 1]) * choices[i] + np.log(upwind_drives[:, 0]) * (1 - choices[i]))
-            sum_log_lik += log_lik
-        return -sum_log_lik
 
     # set up the initial parameters and bounds
-    eps = 1e-3
-    params_init = np.array([0.5, 0.5, 5.0, 0.5, 0.5])
-    params_bounds = [(eps, 1 - eps), (eps, 1 - eps), (eps, 10), (eps, 10), (eps, 10)]
+    eps = 1e-2
+    params_init = np.array([5, 0.5, 5.0, 0.5, 0.5])
+    params_bounds = [(eps, 10), (eps, 1 - eps), (eps, 10), (eps, 1 - eps), (eps, 1 - eps)]
 
     # run the optimization
     if args.algorithm == "de":
         from scipy.optimize import differential_evolution
 
-        res = differential_evolution(optimize, params_bounds, **algo_params)
+        res = differential_evolution(loglik, params_bounds, **algo_params, args=(choices, rewards))
     elif args.algorithm == "shgo":
         from scipy.optimize import shgo
 
-        res = shgo(optimize, params_bounds, **algo_params)
+        res = shgo(loglik, params_bounds, **algo_params, args=(choices, rewards))
     else:
         from scipy.optimize import minimize
 
-        res = minimize(optimize, params_init, bounds=params_bounds, **algo_params)
+        def callback(xk):
+            print(xk, loglik(xk, choices, rewards))
+
+        res = minimize(
+            loglik, params_init, bounds=params_bounds, **algo_params, args=(choices, rewards), callback=callback
+        )
 
     # return the results
     result_dict = {
         "hr": res.x[0],
         "lr": res.x[1],
         "up_dr": res.x[2],
-        "fb_syn": res.x[3],
+        "fb_trans": res.x[3],
         "fb_up": res.x[4],
-    } + ignored_params
+    }
+
+    result_dict = {**result_dict, **ignored_params}
 
     return result_dict
 
@@ -373,15 +396,15 @@ def predict(choices, rewards, param):
         MB = MushroomBody(**param)
         upwind_drives = []
         for j in range(len(choices[i])):
-            upwind_drive = MB.upwind_drive(1)
+            upwind_drive = MB.upwind_drive()
             # apply softmax to upwind drives
             upwind_drive = np.exp(upwind_drive) / np.sum(np.exp(upwind_drive))
             # add to the list
             upwind_drives.append(upwind_drive)
             # randomly choose the odor
-            MB.trial_plasticity(choices[i][j], rewards[i][j], 1)
+            MB.trial_plasticity(choices[i][j], rewards[i][j])
         upwind_drives = np.array(upwind_drives)
-        probs.append(upwind_drive)
+        probs.append(upwind_drives[:, 1])
     probs = np.array(probs, dtype=object)
     return probs
 
@@ -494,8 +517,6 @@ print("".join(["="] * len(start_str)))
 
 
 # Set up the initial parameters and bounds
-print("Initial parameters and bounds loaded successfully")
-
 split_data = get_split_data(choices_full, rewards_full)
 
 # Variables to store the results
@@ -522,7 +543,7 @@ for choices, rewards in tqdm(split_data):
 # Test the model on the held-out data
 for n, (choices, rewards) in tqdm(enumerate(split_data[::-1])):
     # Compute the log likelihoods
-    probs = predict(choices, rewards, *params[n])
+    probs = predict(choices, rewards, params[n])
     test_probs.append(probs)
     test_log_liks.append(log_likelihood(probs, choices))
     test_norm_log_liks.append(normalized_log_likelihood(probs, choices))
