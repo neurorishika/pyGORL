@@ -1,29 +1,30 @@
+import argparse
+import multiprocessing
+import os
+import pickle
+import shutil
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from tqdm import tqdm
-import pickle
-import os
-import multiprocessing
-from datetime import datetime
-import argparse
-import shutil
 
 ## Importing the models
-from pygorl.cogpolicy import VLPolicyGradient, ACLPolicyGradient, AdvLPolicyGradient
+from pygorl.cogpolicy import ACLPolicyGradient, AdvLPolicyGradient, VLPolicyGradient
 from pygorl.cogq import (
-    QLearning,
     FQLearning,
-    OSQLearning,
-    OSFQLearning,
-    SOSFQLearning,
-    HetQLearning,
     HetFQLearning,
-    HetOSQLearning,
     HetOSFQLearning,
+    HetOSQLearning,
+    HetQLearning,
     HetSOSFQLearning,
+    OSFQLearning,
+    OSQLearning,
+    QLearning,
+    SOSFQLearning,
 )
 from pygorl.rdp_client import unlock_and_unzip_file
+from tqdm import tqdm
 
 # create a parser object
 parser = argparse.ArgumentParser(description="Fit a model to a dataset")
