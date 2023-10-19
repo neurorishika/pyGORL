@@ -362,7 +362,9 @@ def fit_MB(choices, rewards):
 
     # set up the initial parameters and bounds
     eps = 1e-3
-    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5])
+    params_init = np.array([0.029, 0.173, 2.691, 0.536, 0.607])
+    # add some noise
+    params_init += np.random.normal(loc=0.0,scale=0.1,size=params_init.shape)*params_init
     params_bounds = [
         (eps, 100),
         (eps, 1 - eps),
@@ -375,7 +377,11 @@ def fit_MB(choices, rewards):
     if args.algorithm == "de":
         from scipy.optimize import differential_evolution
 
-        res = differential_evolution(loglik, params_bounds, **algo_params, args=(choices, rewards))
+        # callback function to print the current parameters
+        def callback(xk, convergence):
+            print(xk, loglik(xk, choices, rewards))
+
+        res = differential_evolution(loglik, params_bounds, **algo_params, args=(choices, rewards), callback=callback)
     elif args.algorithm == "shgo":
         from scipy.optimize import shgo
 
@@ -397,8 +403,8 @@ def fit_MB(choices, rewards):
         "up_dr": res.x[2],
         "fb_trans": res.x[3],
         "fb_up": res.x[4],
-        "mu_inh": res.x[5],
-        "fb_syn": res.x[6],
+        "mu_inh": ignored_params["mu_inh"],
+        "fb_syn": ignored_params["fb_syn"]
     }
 
     result_dict = {**result_dict, **ignored_params}

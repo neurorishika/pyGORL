@@ -378,7 +378,11 @@ def fit_MB(choices, rewards):
     if args.algorithm == "de":
         from scipy.optimize import differential_evolution
 
-        res = differential_evolution(loglik, params_bounds, **algo_params, args=(choices, rewards))
+        # callback function to print the current parameters
+        def callback(xk, convergence):
+            print(xk, loglik(xk, choices, rewards))
+
+        res = differential_evolution(loglik, params_bounds, **algo_params, args=(choices, rewards), callback=callback)
     elif args.algorithm == "shgo":
         from scipy.optimize import shgo
 
