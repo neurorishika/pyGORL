@@ -377,7 +377,7 @@ def fit_MB(choices, rewards):
         (eps, 1 - eps),
         (eps, 1 - eps),
         (eps, 1 - eps),
-        (eps, 1/eps),
+        (eps, 10),
     ]
 
     # run the optimization
