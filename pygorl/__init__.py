@@ -32,6 +32,11 @@ __getattr__, __dir__, __all__ = lazy_loader.attach(
             'unlock_and_unzip_file',
             'zip_and_lock_folder',
         ],
+        'neuronal': [
+            'UnivalentDepression',
+            'UnivalentBidirectional',
+            'BivalentDepression'
+        ],
     },
 )
 
