@@ -337,7 +337,7 @@ def loglik(params, choices, rewards):
 
     def sub(i):
         MB = MushroomBody(
-            fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, mu_inh=mu_inh, fb_syn=fb_syn, pbn_asym=pbn_asym **ignored_params
+            fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, mu_inh=mu_inh, fb_syn=fb_syn, pbn_asym=pbn_asym, **ignored_params
         )
         upwind_drives = []
         for j in range(len(choices[i])):
