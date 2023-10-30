@@ -18,31 +18,31 @@ from tqdm import tqdm
 # setup the neuronal model
 class MushroomBody:
     # initialize the mushroom body
-    def __init__(self, mu_inh=0.1, fr=0.9, lr=0.5, up_dr=5.0, fb_syn=0.1, fb_trans=0.1, fb_up=1.0, pbn_asym=0.5):
+    def __init__(self, mu_inh=0.1, fr=0.9, lr=0.5, up_dr=5.0, fb_syn=0.1, fb_trans=0.1, fb_up=1.0):
         self.fr = fr  # forgetting rate
         self.lr = lr  # learning rate
         self.eps = 1e-3  # small number to avoid division by zero
         self.w_KC_pMBON = np.array([1.0, 1.0])  # weights from KC to MBON (appetitive)
         self.w_KC_nMBON = np.array([1.0, 1.0])  # weights from KC to MBON (aversive)
         # mutual inhibition between MBONs (Felsenberg et al., 2018)
-        self.w_nMBON_pMBON = -1.0 * mu_inh  # weight from aversive MBON to appetitive MBON
-        self.w_pMBON_nMBON = -1.0 * mu_inh  # weight from appetitive MBON to aversive MBON
+        self.w_nMBON_pMBON = 0.0 * mu_inh  # weight from aversive MBON to appetitive MBON
+        self.w_pMBON_nMBON = 0.0 * mu_inh  # weight from appetitive MBON to aversive MBON
         # MBON to DAN feedback
         self.w_pMBON_pDANs = (
-            -1.0 * fb_syn
+            0.0 * fb_syn
         )  # weight from appetitive MBON to reward DANs (inhibitory to subtract reward expectation)
         self.w_nMBON_nDANs = (
-            -1.0 * fb_syn
+            0.0 * fb_syn
         )  # weight from aversive MBON to punishment DANs (inhibitory to subtract punishment expectation)
         self.w_pMBON_nDANs = (
-            1.0 * fb_trans
+            0.0 * fb_trans
         )  # weight from appetitive MBON to punishment DANs (excitatory to add reward expectation)
         self.w_nMBON_pDANs = (
             1.0 * fb_trans
         )  # weight from aversive MBON to reward DANs (excitatory to add punishment expectation)
         # Upwind Neuron inputs
         self.w_pMBON_U = (
-            1.0 * up_dr * pbn_asym
+            1.0 * up_dr
         )  # weight from appetitive MBON to upwind neuron (appetitive means upwind will be activated)
         self.w_nMBON_U = (
             -1.0 * up_dr
@@ -53,6 +53,7 @@ class MushroomBody:
         # Activation function
         # self.activation = lambda x: (1 / self.eps if x > 1 / self.eps else x) if x > 0 else 0  # ReLU
         self.activation = lambda x: np.clip(x, 0, 1 / self.eps)  # bounded ReLU
+        self.bidirectional_activation = lambda x: np.clip(x, -1 / self.eps, 1 / self.eps)  # bounded ReLU
 
     # get the upwind drive for each odor without causing plasticity
     def upwind_drive(self):
@@ -67,7 +68,7 @@ class MushroomBody:
         drives = []
         for KC_activation in [np.array([1, 0]), np.array([0, 1])]:
 
-            # Step 1: NO HOMEOSTATIC PLASTICITY
+            # Step 1: calculate the KC MBON weights after homeostatic plasticity (exponential decay back to 1)
             w_KC_pMBON_ = self.w_KC_pMBON #+ (1 - self.w_KC_pMBON) * (1 - np.exp(-self.fr))
             w_KC_nMBON_ = self.w_KC_nMBON #+ (1 - self.w_KC_nMBON) * (1 - np.exp(-self.fr))
 
@@ -124,7 +125,7 @@ class MushroomBody:
             pDAN_activation = 0
             nDAN_activation = 0
 
-        # Step 1: NO HOMEOSTATIC PLASTICITY
+        # Step 1: calculate the KC MBON weights after homeostatic plasticity (exponential decay back to 1)
         self.w_KC_pMBON = self.w_KC_pMBON #+ (1 - self.w_KC_pMBON) * (1 - np.exp(-self.fr))
         self.w_KC_nMBON = self.w_KC_nMBON #+ (1 - self.w_KC_nMBON) * (1 - np.exp(-self.fr))
 
@@ -148,7 +149,7 @@ class MushroomBody:
         upwind_drive = self.activation(np.dot(MBON_updated, np.array([self.w_pMBON_U, self.w_nMBON_U])))
 
         # Step 5: calculate the DAN activations
-        pDAN_activation = self.activation(
+        pDAN_activation = self.bidirectional_activation(
             pDAN_activation
             + self.w_U_pDANs * upwind_drive
             + self.w_pMBON_pDANs * MBON_updated[0]
@@ -156,7 +157,7 @@ class MushroomBody:
             + self.w_nMBON_pDANs * MBON_updated[1]
             - self.w_nMBON_pDANs  # to account for adaptation to typical DAN activation
         )
-        nDAN_activation = self.activation(
+        nDAN_activation = self.bidirectional_activation(
             nDAN_activation
             + self.w_U_nDANs * upwind_drive
             + self.w_pMBON_nDANs * MBON_updated[0]
@@ -168,11 +169,10 @@ class MushroomBody:
         # Step 6: calculate the plasticity and update the weights
         self.w_KC_pMBON = self.w_KC_pMBON \
                         - self.lr * nDAN_activation * KC_activation * self.w_KC_pMBON \
-                        + self.fr * nDAN_activation * (1-KC_activation) * (1 - self.w_KC_pMBON)
+                        + self.fr * nDAN_activation * (1 - KC_activation) * (1 - self.w_KC_pMBON)
         self.w_KC_nMBON = self.w_KC_nMBON \
                         - self.lr * pDAN_activation * KC_activation * self.w_KC_nMBON \
-                        + self.fr * pDAN_activation * (1-KC_activation) * (1 - self.w_KC_nMBON)
-        
+                        + self.fr * pDAN_activation * (1 - KC_activation) * (1 - self.w_KC_nMBON)
 
         # Bound the weights
         self.w_KC_pMBON = np.clip(self.w_KC_pMBON, 0, 1)
@@ -325,20 +325,18 @@ if args.algorithm == "minimize":
 # for now, we will ignore
 # 1) cross modal plasticity so mu_inh = 0
 # 2) cross modal excitation so fb_trans = 0
-# ignored_params = {"mu_inh": 0.0, "fb_syn": 0.0}
-ignored_params = {}
+ignored_params = {"mu_inh": 0.0, "fb_syn": 0.0}
+# ignored_params = {}
 
 
 def loglik(params, choices, rewards):
     # returns the log likelihood of the data given the parameters
-    fr, lr, up_dr, fb_trans, fb_up, mu_inh, fb_syn, pbn_asym = params
+    fr, lr, up_dr, fb_trans, fb_up = params
     # initialize the mushroom body
     sum_log_lik = 0
 
     def sub(i):
-        MB = MushroomBody(
-            fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, mu_inh=mu_inh, fb_syn=fb_syn, pbn_asym=pbn_asym **ignored_params
-        )
+        MB = MushroomBody(fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, **ignored_params)
         upwind_drives = []
         for j in range(len(choices[i])):
             upwind_drive = MB.upwind_drive()
@@ -368,16 +366,15 @@ def fit_MB(choices, rewards):
 
     # set up the initial parameters and bounds
     eps = 1e-3
-    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5, 0.5, 0.5, 1.0])
+    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5])
+    # add some noise
+    params_init += np.random.normal(loc=0.0,scale=0.1,size=params_init.shape)*params_init
     params_bounds = [
         (eps, 100),
         (eps, 1 - eps),
         (eps, 100),
         (eps, 1 - eps),
         (eps, 1 - eps),
-        (eps, 1 - eps),
-        (eps, 1 - eps),
-        (eps, 1/eps),
     ]
 
     # run the optimization
@@ -410,9 +407,8 @@ def fit_MB(choices, rewards):
         "up_dr": res.x[2],
         "fb_trans": res.x[3],
         "fb_up": res.x[4],
-        "mu_inh": res.x[5],
-        "fb_syn": res.x[6],
-        "pbn_asym": res.x[7],
+        "mu_inh": ignored_params["mu_inh"],
+        "fb_syn": ignored_params["fb_syn"]
     }
 
     result_dict = {**result_dict, **ignored_params}
@@ -598,6 +594,6 @@ all_data = {
 }
 
 # Dump to disk
-with gzip.open(args.output + "fit_results/bivalent_depression_fit_results.pkl.gz", "wb") as f:
+with gzip.open(args.output + "fit_results/univalent_bidirectional_fit_results.pkl.gz", "wb") as f:
     pickle.dump(all_data, f)
 
