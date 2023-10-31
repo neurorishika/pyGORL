@@ -368,12 +368,11 @@ def fit_MB(choices, rewards):
 
     # set up the initial parameters and bounds
     eps = 1e-3
-    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5, 0.5, 0.5, 5.0])
+    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5, 0.5, 5.0])
     params_bounds = [
         (eps, 100),
         (eps, 1 - eps),
         (eps, 100),
-        (eps, 1 - eps),
         (eps, 1 - eps),
         (eps, 1 - eps),
         (eps, 1 - eps),
