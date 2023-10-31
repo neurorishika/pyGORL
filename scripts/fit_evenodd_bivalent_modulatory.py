@@ -18,7 +18,7 @@ from tqdm import tqdm
 # setup the neuronal model
 class MushroomBody:
     # initialize the mushroom body
-    def __init__(self, mu_inh=0.1, fr=0.9, lr=0.5, up_dr=5.0, fb_syn=0.1, fb_trans=0.1, fb_up=1.0, pbn_asym=0.5):
+    def __init__(self, mu_inh=0.1, fr=0.9, lr=0.5, up_dr=5.0, fb_syn=0.1, fb_trans=0.1, fb_up=1.0, up_dr_off=5.0):
         self.fr = fr  # forgetting rate
         self.lr = lr  # learning rate
         self.eps = 1e-3  # small number to avoid division by zero
@@ -42,7 +42,7 @@ class MushroomBody:
         )  # weight from aversive MBON to reward DANs (excitatory to add punishment expectation)
         # Upwind Neuron inputs
         self.w_pMBON_U = (
-            1.0 * up_dr * pbn_asym
+            1.0 * up_dr_off
         )  # weight from appetitive MBON to upwind neuron (appetitive means upwind will be activated)
         self.w_nMBON_U = (
             -1.0 * up_dr
@@ -326,18 +326,18 @@ if args.algorithm == "minimize":
 # 1) cross modal plasticity so mu_inh = 0
 # 2) cross modal excitation so fb_trans = 0
 # ignored_params = {"mu_inh": 0.0, "fb_syn": 0.0}
-ignored_params = {}
+ignored_params = {"fb_syn": 0.0}
 
 
 def loglik(params, choices, rewards):
     # returns the log likelihood of the data given the parameters
-    fr, lr, up_dr, fb_trans, fb_up, mu_inh, fb_syn, pbn_asym = params
+    fr, lr, up_dr, fb_trans, fb_up, mu_inh, up_dr_off = params
     # initialize the mushroom body
     sum_log_lik = 0
 
     def sub(i):
         MB = MushroomBody(
-            fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, mu_inh=mu_inh, fb_syn=fb_syn, pbn_asym=pbn_asym, **ignored_params
+            fr=fr, lr=lr, up_dr=up_dr, fb_trans=fb_trans, fb_up=fb_up, mu_inh=mu_inh, up_dr_off=up_dr_off, **ignored_params
         )
         upwind_drives = []
         for j in range(len(choices[i])):
@@ -368,7 +368,7 @@ def fit_MB(choices, rewards):
 
     # set up the initial parameters and bounds
     eps = 1e-3
-    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5, 0.5, 0.5, 1.0])
+    params_init = np.array([5.0, 0.5, 5.0, 0.5, 0.5, 0.5, 0.5, 5.0])
     params_bounds = [
         (eps, 100),
         (eps, 1 - eps),
@@ -377,7 +377,7 @@ def fit_MB(choices, rewards):
         (eps, 1 - eps),
         (eps, 1 - eps),
         (eps, 1 - eps),
-        (eps, 10),
+        (eps, 100),
     ]
 
     # run the optimization
