@@ -67,9 +67,9 @@ class MushroomBody:
         drives = []
         for KC_activation in [np.array([1, 0]), np.array([0, 1])]:
 
-            # Step 1: calculate the KC MBON weights after homeostatic plasticity (exponential decay back to 1)
-            w_KC_pMBON_ = self.w_KC_pMBON #+ (1 - self.w_KC_pMBON) * (1 - np.exp(-self.fr))
-            w_KC_nMBON_ = self.w_KC_nMBON #+ (1 - self.w_KC_nMBON) * (1 - np.exp(-self.fr))
+            # Step 1: calculate the KC MBON weights no plasticity
+            w_KC_pMBON_ = self.w_KC_pMBON
+            w_KC_nMBON_ = self.w_KC_nMBON
 
             # Step 2: calculate the MBON activations
             MBON_activation = np.array(
@@ -125,8 +125,8 @@ class MushroomBody:
             nDAN_activation = 0
 
         # Step 1: NO HOMEOSTATIC PLASTICITY
-        self.w_KC_pMBON = self.w_KC_pMBON #+ (1 - self.w_KC_pMBON) * (1 - np.exp(-self.fr))
-        self.w_KC_nMBON = self.w_KC_nMBON #+ (1 - self.w_KC_nMBON) * (1 - np.exp(-self.fr))
+        self.w_KC_pMBON = self.w_KC_pMBON
+        self.w_KC_nMBON = self.w_KC_nMBON
 
         # Step 2: calculate the MBON activations
         MBON_activation = np.array(
@@ -362,14 +362,15 @@ def loglik(params, choices, rewards):
 
 
 def fit_MB(choices, rewards):
+    # fr, lr, up_dr, fb_trans, fb_up are the parameters to be optimized
 
     # set up the initial parameters and bounds
     eps = 1e-3
-    params_init = np.array([5, 0.5, 5, 0.5, 0.5])
+    params_init = np.array([0.5, 0.5, 5, 0.5, 0.5])
     # add some noise
     params_init += np.random.normal(loc=0.0,scale=0.1,size=params_init.shape)*params_init
     params_bounds = [
-        (eps, 100),
+        (eps, 1 - eps),
         (eps, 1 - eps),
         (eps, 100),
         (eps, 1 - eps),
