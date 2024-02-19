@@ -35,7 +35,9 @@ __getattr__, __dir__, __all__ = lazy_loader.attach(
         'neuronal': [
             'UnivalentDepression',
             'UnivalentBidirectional',
-            'BivalentDepression'
+            'BivalentDepression',
+            'UnivalentModulatory',
+            'BivalentModulatory',
         ],
     },
 )
