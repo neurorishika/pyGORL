@@ -27,6 +27,7 @@ torch = "^2.0.1"
 torchvision = "^0.15.2"
 torchaudio = "^2.0.2"
 plotly = "^5.16.1"
+statsmodels = "^0.14.1"
 
 [build-system]
 requires = ["poetry-core"]

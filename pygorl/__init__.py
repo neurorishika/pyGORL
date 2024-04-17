@@ -33,11 +33,12 @@ __getattr__, __dir__, __all__ = lazy_loader.attach(
             'zip_and_lock_folder',
         ],
         'neuronal': [
-            'UnivalentDepression',
-            'UnivalentBidirectional',
-            'BivalentDepression',
+            'UnivalentDepressionHomeostatic',
+            'UnivalentBidirectionalHomeostatic',
+            'BivalentDepressionHomeostatic',
             'UnivalentModulatory',
             'BivalentModulatory',
+            'UnivalentBidirectionalModulatory',
         ],
     },
 )
@@ -47,4 +48,9 @@ __all__ = ['ACLPolicyGradient', 'AdvLPolicyGradient', 'FQLearning',
            'HetQLearning', 'HetSOSFQLearning', 'OSFQLearning', 'OSQLearning',
            'QLearning', 'SOSFQLearning', 'VLPolicyGradient',
            'VSPolicyGradient', 'cogpolicy', 'cogq', 'rdp_client',
-           'unlock_and_unzip_file', 'zip_and_lock_folder']
+           'unlock_and_unzip_file', 'zip_and_lock_folder',
+           'UnivalentDepressionHomeostatic', 'UnivalentBidirectionalHomeostatic', 
+           'BivalentDepressionHomeostatic', 'UnivalentModulatory', 
+           'BivalentModulatory', 'UnivalentBidirectionalModulatory']
+           
+

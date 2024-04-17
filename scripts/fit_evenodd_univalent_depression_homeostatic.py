@@ -589,6 +589,6 @@ all_data = {
 }
 
 # Dump to disk
-with gzip.open(args.output + "fit_results/univalent_depression_fit_results.pkl.gz", "wb") as f:
+with gzip.open(args.output + "fit_results/univalent_depression_homeostatic_fit_results.pkl.gz", "wb") as f:
     pickle.dump(all_data, f)
 
